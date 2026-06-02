@@ -172,7 +172,9 @@ Core database tables:
 pip install -r requirements.txt
 ```
 
-3. Launch application
+3. Create a copy of inventory_template.db and rename the copy to inventory.db. This database is initialized for all of the functionality of the app.
+
+4. Launch application
 
 ```bash
 python app.py
