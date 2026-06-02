@@ -110,7 +110,7 @@ Core database tables:
 </p>
 
 <p align="center">
-  <em>Main application console used to access fulfillment, lookup, and inventory workflows.</em>
+  <em>Main application console.</em>
 </p>
 
 ---
@@ -146,7 +146,7 @@ Core database tables:
 </p>
 
 <p align="center">
-  <em>Generated pick workflow used during fulfillment and warehouse picking operations.</em>
+  <em>Generated pick workflow used during fulfillment operations.</em>
 </p>
 
 ---
