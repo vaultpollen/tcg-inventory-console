@@ -14,7 +14,7 @@ This is a custom warehouse and inventory management system built to manage high-
 
 This lightweight application was developed to replace a spreadsheet-driven workflow with a more scalable and robust inventory database platform capable of handling more demanding inventory ingestion, location management, order fulfillment, depletion tracking, batch storage, and integration with alternative database solutions.
 
-The system was designed around real operational requirements: Managing thousands of unique SKUs, batch-based storage implemented using chaos storage methodology, efficient pick order flow, inventory depletion logging, and support for merging legacy systems and alternative modern systems run in parallel.
+The system was designed around real operational requirements: Managing thousands of unique SKUs, batch-based inventory management implemented using chaos storage methodology, efficient pick order flow, inventory depletion logging, and support for merging legacy systems and alternative modern systems run in parallel.
 
 ---
 
