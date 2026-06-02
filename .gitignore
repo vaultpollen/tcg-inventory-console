@@ -1,0 +1,13 @@
+inventory.db
+
+backups/
+pick_outputs/
+inventory_imports/processed/
+
+__pycache__/
+*.pyc
+
+.vscode/
+.idea/
+
+Thumbs.db
