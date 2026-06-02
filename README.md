@@ -10,11 +10,9 @@ Problem: Managing trading card inventory through spreadsheets becomes increasing
 * Inventory depletion accuracy
 * Legacy inventory migration and support
 
-This is a custom warehouse and inventory management system built to manage high-volume trading card inventory across multiple markets and sales platforms at scale.
+This is a custom warehouse and inventory management system built to manage a high-volume trading card selling operation across multiple markets and sales platforms at scale.
 
-This lightweight application was developed to replace a spreadsheet-driven workflow with a more scalable and robust inventory database platform capable of handling more demanding inventory ingestion, location management, order fulfillment, depletion tracking, batch storage, and integration with alternative database solutions.
-
-The system was designed around real operational requirements: Managing thousands of unique SKUs, batch-based inventory management implemented using chaos storage methodology, efficient pick order flow, inventory depletion logging, and support for merging legacy systems and alternative modern systems run in parallel.
+The application was developed to replace a spreadsheet-driven workflow with a database platform capable of handling tasks more efficiently and scalably. It was designed around real operational requirements: managing thousands of unique SKUs, batch-based chaos storage methodology, efficient pick order flow, inventory depletion logging, and support for merging legacy and alternative modern systems run in parallel.
 
 ---
 
