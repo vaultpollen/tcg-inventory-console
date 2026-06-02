@@ -103,7 +103,63 @@ Core database tables:
 
 ## Screenshots
 
-Screenshots to be added.
+### Main Console
+
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/f9bf97e8-dd4e-4160-a49b-cefa6a10a296" width="500">
+</p>
+
+<p align="center">
+  <em>Main application console used to access fulfillment, lookup, and inventory workflows.</em>
+</p>
+
+---
+
+### Batch Lookup
+
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/9e88b033-304f-40db-a5ec-e8870cb65e3a" width="900">
+</p>
+
+<p align="center">
+  <em>Batch lookup tool for locating inventory batches and resolving storage locations.</em>
+</p>
+
+---
+
+### Manual Card Lookup
+
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/0558f133-7661-4ebc-883c-d617a42e1314" width="900">
+</p>
+
+<p align="center">
+  <em>Inventory search interface with quantity visibility, location resolution, and manual depletion.</em>
+</p>
+
+---
+
+### Pick Workflow
+
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/0808964a-c84f-4e47-a884-9c943deade25" width="1200">
+</p>
+
+<p align="center">
+  <em>Generated pick workflow used during fulfillment and warehouse picking operations.</em>
+</p>
+
+---
+
+### Batch Manager
+
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/d8b44281-99f0-4b37-9915-40d6d1b87ed0" width="550">
+</p>
+
+<p align="center">
+  <em>Batch management interface supporting location updates and bulk inventory ingestion.</em>
+</p>
 
 ---
 
