@@ -79,6 +79,33 @@ def use_recent(event):
     batch_var.set(values[0])
     lookup_batch()
 
+def get_last_batch_by_code(code):
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+
+    row = conn.execute("""
+        SELECT batch_id
+        FROM batches
+        WHERE batch_id GLOB ?
+        ORDER BY CAST(substr(batch_id, 1, length(batch_id)-1) AS INTEGER) DESC
+        LIMIT 1
+        """,
+        (f"[0-9]*{code}",)
+    ).fetchone()
+
+    conn.close()
+
+    return row["batch_id"] if row else ""
+
+def lookup_last_code(code):
+    batch_id = get_last_batch_by_code(code)
+
+    if not batch_id:
+        status_var.set(f"No batch found for code {code}.")
+        return
+
+    batch_var.set(batch_id)
+    lookup_batch()
 
 root = tk.Tk()
 root.title("Batch Lookup")
@@ -97,6 +124,9 @@ entry.pack(side="left", padx=8)
 entry.bind("<Return>", lambda event: lookup_batch())
 
 tk.Button(top, text="Search", command=lookup_batch).pack(side="left")
+tk.Button(top, text="Last Ebay", command=lambda: lookup_last_code("E")).pack(side="left", padx=4)
+tk.Button(top, text="Last BSC", command=lambda: lookup_last_code("B")).pack(side="left", padx=4)
+tk.Button(top, text="Last TCGP", command=lambda: lookup_last_code("T")).pack(side="left", padx=4)
 
 tk.Label(root, textvariable=status_var).pack(anchor="w", padx=10)
 

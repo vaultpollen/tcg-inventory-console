@@ -507,7 +507,6 @@ def clear_form():
     selected_var.set("0 files selected")
     status_var.set("Ready.")
 
-
 root = tk.Tk()
 root.title("Add / Update Batch")
 root.geometry("650x610")
