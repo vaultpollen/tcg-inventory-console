@@ -10,11 +10,9 @@ Problem: Managing trading card inventory through spreadsheets becomes increasing
 * Inventory depletion accuracy
 * Legacy inventory migration and support
 
-This is a custom warehouse and inventory management system built to manage high-volume trading card inventory across multiple markets and sales platforms at scale.
+This is a custom warehouse and inventory management system built to manage a high-volume trading card selling operation across multiple markets and sales platforms at scale.
 
-This lightweight application was developed to replace a spreadsheet-driven workflow with a more scalable and robust inventory database platform capable of handling more demanding inventory ingestion, location management, order fulfillment, depletion tracking, batch storage, and legacy inventory migration.
-
-The system was designed around real operational requirements: Managing thousands of unique SKUs, batch-based storage implemented using chaos storage methodology, efficient pick order flow, inventory depletion logging, and support for merging legacy systems and alternative modern systems run in parallel.
+The application was developed to replace a spreadsheet-driven workflow with a database platform capable of handling tasks more efficiently and scalably. It was designed around real operational requirements: managing thousands of unique SKUs, batch-based chaos storage methodology, efficient pick order flow, inventory depletion logging, and support for merging legacy and alternative modern systems run in parallel.
 
 ---
 
@@ -103,7 +101,63 @@ Core database tables:
 
 ## Screenshots
 
-Screenshots to be added.
+### Main Console
+
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/f9bf97e8-dd4e-4160-a49b-cefa6a10a296" width="500">
+</p>
+
+<p align="center">
+  <em>Main application console.</em>
+</p>
+
+---
+
+### Batch Lookup
+
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/9e88b033-304f-40db-a5ec-e8870cb65e3a" width="900">
+</p>
+
+<p align="center">
+  <em>Batch lookup tool for locating inventory batches and resolving storage locations.</em>
+</p>
+
+---
+
+### Manual Card Lookup
+
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/0558f133-7661-4ebc-883c-d617a42e1314" width="900">
+</p>
+
+<p align="center">
+  <em>Inventory search interface with quantity visibility, location resolution, and manual depletion.</em>
+</p>
+
+---
+
+### Pick Workflow
+
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/0808964a-c84f-4e47-a884-9c943deade25" width="1200">
+</p>
+
+<p align="center">
+  <em>Generated pick workflow used during fulfillment operations.</em>
+</p>
+
+---
+
+### Batch Manager
+
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/d8b44281-99f0-4b37-9915-40d6d1b87ed0" width="550">
+</p>
+
+<p align="center">
+  <em>Batch management interface supporting location updates and bulk inventory ingestion.</em>
+</p>
 
 ---
 
@@ -116,7 +170,9 @@ Screenshots to be added.
 pip install -r requirements.txt
 ```
 
-3. Launch application
+3. Create a copy of inventory_template.db and rename the copy to inventory.db. This database is initialized for all of the functionality of the app.
+
+4. Launch application
 
 ```bash
 python app.py
