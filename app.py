@@ -16,7 +16,8 @@ SCRIPTS = {
     "Generate Pick Wave": "generate_pick_wave.py",
     "Manual Card Lookup": "manual_card_lookup.py",
     "Batch Lookup": "batch_lookup.py",
-    "Add / Update Batch": "batch_editor.py"
+    "Add / Update Batch": "batch_editor.py",
+    "Single Card Entry": "single_card_entry.py"
 }
 
 def open_file(path):
@@ -103,7 +104,7 @@ def make_button(parent, text, command, accent=False):
 def main():
     root = tk.Tk()
     root.title("TCG Inventory Console")
-    root.geometry("500x720")
+    root.geometry("500x740")
     root.resizable(False, False)
     root.configure(bg="#121212")
 
@@ -180,6 +181,12 @@ def main():
         admin,
         "Add / Update Batch",
         lambda: run_script("batch_editor.py", status)
+    )
+
+    make_button(
+        admin,
+        "Single Card Entry",
+        lambda: run_script("single_card_entry.py", status)
     )
 
     root.mainloop()
