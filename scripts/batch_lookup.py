@@ -97,6 +97,22 @@ def get_last_batch_by_code(code):
 
     return row["batch_id"] if row else ""
 
+def get_last_si_batch():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+
+    row = conn.execute("""
+        SELECT batch_id
+        FROM batches
+        WHERE batch_id GLOB 'SI[0-9]*'
+        ORDER BY CAST(substr(batch_id, 3) AS INTEGER) DESC
+        LIMIT 1
+    """).fetchone()
+
+    conn.close()
+
+    return row["batch_id"] if row else ""
+
 def lookup_last_code(code):
     batch_id = get_last_batch_by_code(code)
 
@@ -106,6 +122,51 @@ def lookup_last_code(code):
 
     batch_var.set(batch_id)
     lookup_batch()
+
+def lookup_last_tcgp():
+    t_batch = get_last_batch_by_code("T")
+    si_batch = get_last_si_batch()
+
+    for item in result_tree.get_children():
+        result_tree.delete(item)
+
+    shown = []
+
+    for batch_id in (t_batch, si_batch):
+        if not batch_id:
+            continue
+
+        batch_var.set(batch_id)
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        loc = resolve_batch_location(conn, batch_id)
+        conn.close()
+
+        if not loc or not loc.get("found"):
+            continue
+
+        location = f"{loc.get('box_id', '')}:{loc.get('segment', '')}" if (loc.get("box_id") or loc.get("segment")) else ""
+
+        values = (
+            loc.get("batch_id", ""),
+            loc.get("source_system", ""),
+            loc.get("source_table", ""),
+            loc.get("box_id", ""),
+            loc.get("segment", ""),
+            location,
+            loc.get("physical_location", ""),
+            loc.get("shelf_id", ""),
+            loc.get("shelf_level", ""),
+            loc.get("box_type", ""),
+            loc.get("batch_notes", ""),
+            loc.get("box_notes", ""),
+        )
+
+        result_tree.insert("", "end", values=values)
+        add_recent(batch_id, location)
+        shown.append(batch_id)
+
+    status_var.set("Last TCGP batches: " + ", ".join(shown) if shown else "No TCGP batches found.")
 
 root = tk.Tk()
 root.title("Batch Lookup")
@@ -126,7 +187,7 @@ entry.bind("<Return>", lambda event: lookup_batch())
 tk.Button(top, text="Search", command=lookup_batch).pack(side="left")
 tk.Button(top, text="Last Ebay", command=lambda: lookup_last_code("E")).pack(side="left", padx=4)
 tk.Button(top, text="Last BSC", command=lambda: lookup_last_code("B")).pack(side="left", padx=4)
-tk.Button(top, text="Last TCGP", command=lambda: lookup_last_code("T")).pack(side="left", padx=4)
+tk.Button(top, text="Last TCGP", command=lookup_last_tcgp).pack(side="left", padx=4)
 
 tk.Label(root, textvariable=status_var).pack(anchor="w", padx=10)
 
