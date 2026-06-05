@@ -253,11 +253,18 @@ def save_card():
 
 def clear_card_fields():
     name_var.set("")
-    set_code_var.set("")
-    set_name_var.set("")
     collector_var.set("")
-    rarity_var.set("")
     qty_var.set("1")
+
+    if not keep_context_var.get():
+        set_code_var.set("")
+        set_name_var.set("")
+        condition_var.set("near_mint")
+        print_var.set("normal")
+        rarity_var.set("")
+        language_var.set("en")
+        tcg_var.set("mtg")
+        batch_var.set("")
 
 
 root = tk.Tk()
@@ -266,6 +273,7 @@ root.geometry("620x560")
 
 last_t_var = tk.StringVar()
 last_si_var = tk.StringVar()
+keep_context_var = tk.IntVar(value=1)
 
 name_var = tk.StringVar()
 set_code_var = tk.StringVar()
@@ -335,6 +343,12 @@ button_frame.grid(row=start_row + len(fields), column=1, sticky="w", pady=16)
 
 tk.Button(button_frame, text="Add Card", command=save_card, width=18).pack(side="left", padx=4)
 tk.Button(button_frame, text="Clear", command=clear_card_fields, width=10).pack(side="left", padx=4)
+
+tk.Checkbutton(
+    frame,
+    text="Keep set/batch fields after adding",
+    variable=keep_context_var
+).grid(row=start_row + len(fields) + 1, column=1, sticky="w", pady=(0, 8))
 
 refresh_last_batches()
 root.mainloop()

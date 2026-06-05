@@ -14,7 +14,6 @@ from core.paths import (
     MISSING_ITEMS_CSV,
     PICK_WORKFLOW_CSV,
     PICK_WAVE_XLSX,
-    DEFAULT_WORKBOOK,
 )
 
 
