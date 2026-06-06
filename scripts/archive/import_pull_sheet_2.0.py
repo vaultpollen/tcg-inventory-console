@@ -1,6 +1,3 @@
-# This version of the script attempts to load SkuIds from the pull sheet into the pick wave function.
-# It then preserves them throughout the pipeline to be removed from the pull sheet.
-# What this does is allows the user to upload the remaining unfound cards to TCGA without risk of having cross-inventory issues.
 import csv
 import sqlite3
 from pathlib import Path
@@ -45,7 +42,6 @@ def norm_tcg(v):
 
 def parse_condition_print(v):
     s = clean(v).lower()
-
     print_type = "normal"
 
     if "reverse holo" in s or "reverse holofoil" in s:
@@ -89,8 +85,7 @@ def init_pull_table(conn):
         original_number TEXT,
         original_set TEXT,
         original_rarity TEXT,
-        original_quantity INTEGER,
-        original_skuid TEXT
+        original_quantity INTEGER
     );
 
     CREATE INDEX idx_pull_lookup
@@ -140,7 +135,6 @@ def import_pull_csv(csv_path):
                 original_set = clean(row.get("Set"))
                 original_rarity = clean(row.get("Rarity"))
                 original_quantity = clean_int(row.get("Quantity"))
-                original_skuid = clean(row.get("SkuId"))
 
                 tcg = norm_tcg(original_product_line)
                 card_name = original_product_name
@@ -178,10 +172,9 @@ def import_pull_csv(csv_path):
                         original_number,
                         original_set,
                         original_rarity,
-                        original_quantity,
-                        original_skuid
+                        original_quantity
                     )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         order_id,
@@ -203,7 +196,6 @@ def import_pull_csv(csv_path):
                         original_set,
                         original_rarity,
                         original_quantity,
-                        original_skuid,
                     )
                 )
 

@@ -1,11 +1,5 @@
-# This version of the script attempts to load SkuIds from the pull sheet into the pick wave function.
-# It then preserves them throughout the pipeline to be removed from the pull sheet.
-# What this does is allows the user to upload the remaining unfound cards to TCGA without risk of having cross-inventory issues.
 import csv
-import shutil
 import sqlite3
-from collections import defaultdict
-from datetime import datetime
 from pathlib import Path
 from tkinter import Tk, messagebox
 
@@ -14,7 +8,12 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 from core.paths import (
     DB_PATH,
+    OUT_DIR,
     PICK_WAVE_CSV,
+    PACK_ORDER_CSV,
+    MISSING_ITEMS_CSV,
+    PICK_WORKFLOW_CSV,
+    PICK_WAVE_XLSX,
 )
 
 
@@ -51,7 +50,6 @@ def load_pick_rows():
                 continue
 
             rows.append({
-                "pull_id": clean_int(r.get("pull_id")),
                 "order_id": clean(r.get("order_id")),
                 "row_id": row_id,
                 "batch_id": clean(r.get("batch_id")),
@@ -144,142 +142,6 @@ def apply_depletion(conn, preview):
     return depleted_count, total_cards
 
 
-def get_loaded_pull_sheet(conn):
-    row = conn.execute(
-        """
-        SELECT source_file_path, fieldnames
-        FROM loaded_pull_sheet
-        WHERE id = 1
-        """
-    ).fetchone()
-
-    if row is None:
-        return None, []
-
-    source_file_path = clean(row[0])
-    fieldnames = clean(row[1]).split("|") if clean(row[1]) else []
-
-    return source_file_path, fieldnames
-
-
-def calculate_picked_by_pull_id(preview):
-    picked = defaultdict(int)
-
-    for r, current_qty, status in preview:
-        if status != "OK":
-            continue
-
-        pull_id = clean_int(r.get("pull_id"))
-        qty = clean_int(r.get("qty_to_pick"))
-
-        if pull_id > 0 and qty > 0:
-            picked[pull_id] += qty
-
-    return picked
-
-
-def backup_pull_sheet(source_path):
-    source_path = Path(source_path)
-
-    if not source_path.exists():
-        raise FileNotFoundError(f"Loaded pull sheet not found: {source_path}")
-
-    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    backup_path = source_path.with_name(f"{source_path.stem}.before_db_pull_{stamp}{source_path.suffix}")
-
-    shutil.copy2(source_path, backup_path)
-    return backup_path
-
-
-def rewrite_loaded_pull_sheet(conn, preview):
-    source_file_path, fieldnames = get_loaded_pull_sheet(conn)
-
-    if not source_file_path:
-        return None, 0, 0
-
-    source_path = Path(source_file_path)
-
-    if not fieldnames:
-        fieldnames = [
-            "Product Line",
-            "Product Name",
-            "Condition",
-            "Number",
-            "Set",
-            "Rarity",
-            "Quantity",
-            "SkuId",
-        ]
-
-    picked_by_pull_id = calculate_picked_by_pull_id(preview)
-
-    if not picked_by_pull_id:
-        raise ValueError(
-            "No pull_id values were found in pick_wave.csv. "
-            "Regenerate pick wave after adding pull_id to generate_pick_wave.py pick_fields."
-        )
-
-    pull_rows = conn.execute(
-        """
-        SELECT
-            id,
-            original_product_line,
-            original_product_name,
-            original_condition,
-            original_number,
-            original_set,
-            original_rarity,
-            original_quantity,
-            original_skuid
-        FROM pull_items
-        ORDER BY id
-        """
-    ).fetchall()
-
-    output_rows = []
-    omitted_rows = 0
-
-    for row in pull_rows:
-        pull_id = int(row[0])
-        original_qty = int(row[7] or 0)
-        picked_qty = int(picked_by_pull_id.get(pull_id, 0))
-        remaining_qty = original_qty - picked_qty
-
-        if remaining_qty <= 0:
-            omitted_rows += 1
-            continue
-
-        out = {h: "" for h in fieldnames}
-
-        if "Product Line" in out:
-            out["Product Line"] = clean(row[1])
-        if "Product Name" in out:
-            out["Product Name"] = clean(row[2])
-        if "Condition" in out:
-            out["Condition"] = clean(row[3])
-        if "Number" in out:
-            out["Number"] = clean(row[4])
-        if "Set" in out:
-            out["Set"] = clean(row[5])
-        if "Rarity" in out:
-            out["Rarity"] = clean(row[6])
-        if "Quantity" in out:
-            out["Quantity"] = remaining_qty
-        if "SkuId" in out:
-            out["SkuId"] = clean(row[8])
-
-        output_rows.append(out)
-
-    backup_path = backup_pull_sheet(source_path)
-
-    with open(source_path, "w", encoding="utf-8-sig", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction="ignore")
-        writer.writeheader()
-        writer.writerows(output_rows)
-
-    return backup_path, len(output_rows), omitted_rows
-
-
 def main():
     root = Tk()
     root.withdraw()
@@ -302,12 +164,10 @@ def main():
         ok_rows = [x for x in preview if x[2] == "OK"]
 
         msg = (
-            f"Ready to deplete SQLite inventory.\n\n"
+            f"Ready to deplete SQLite inventory only.\n\n"
             f"OK rows: {len(ok_rows)}\n"
             f"Problem rows: {len(errors)}\n"
             f"Total cards to deplete: {sum(x[0]['qty_to_pick'] for x in ok_rows)}\n\n"
-            f"After depletion, the loaded pull sheet will be rewritten in-place with DB-picked quantities removed.\n"
-            f"A timestamped backup will be created first.\n\n"
             f"Proceed?"
         )
 
@@ -330,36 +190,22 @@ def main():
             if not proceed:
                 return
 
-        # Rewrite first, while inventory has not yet been changed.
-        # If rewrite fails, inventory is not depleted.
-        backup_path, remaining_rows, omitted_rows = rewrite_loaded_pull_sheet(conn, preview)
-
         depleted_count, total_cards = apply_depletion(conn, preview)
 
         conn.commit()
-
-        sheet_msg = (
-            f"\n\nLoaded pull sheet updated.\n"
-            f"Remaining rows: {remaining_rows}\n"
-            f"Rows removed: {omitted_rows}\n"
-            f"Backup:\n{backup_path}"
-        )
 
         messagebox.showinfo(
             "Depletion complete",
             f"SQLite depletion complete.\n\n"
             f"Rows depleted: {depleted_count}\n"
             f"Cards depleted: {total_cards}"
-            f"{sheet_msg}"
         )
 
         print(f"Rows depleted: {depleted_count}")
         print(f"Cards depleted: {total_cards}")
-        print(f"Pull sheet backup: {backup_path}")
 
-    except Exception as e:
+    except Exception:
         conn.rollback()
-        messagebox.showerror("Depletion failed", str(e))
         raise
 
     finally:

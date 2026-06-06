@@ -1,6 +1,3 @@
-# This version of the script attempts to load SkuIds from the pull sheet into the pick wave function.
-# It then preserves them throughout the pipeline to be removed from the pull sheet.
-# What this does is allows the user to upload the remaining unfound cards to TCGA without risk of having cross-inventory issues.
 import csv
 import shutil
 import sqlite3
@@ -208,16 +205,9 @@ def rewrite_loaded_pull_sheet(conn, preview):
             "Set",
             "Rarity",
             "Quantity",
-            "SkuId",
         ]
 
     picked_by_pull_id = calculate_picked_by_pull_id(preview)
-
-    if not picked_by_pull_id:
-        raise ValueError(
-            "No pull_id values were found in pick_wave.csv. "
-            "Regenerate pick wave after adding pull_id to generate_pick_wave.py pick_fields."
-        )
 
     pull_rows = conn.execute(
         """
@@ -229,8 +219,7 @@ def rewrite_loaded_pull_sheet(conn, preview):
             original_number,
             original_set,
             original_rarity,
-            original_quantity,
-            original_skuid
+            original_quantity
         FROM pull_items
         ORDER BY id
         """
@@ -265,8 +254,6 @@ def rewrite_loaded_pull_sheet(conn, preview):
             out["Rarity"] = clean(row[6])
         if "Quantity" in out:
             out["Quantity"] = remaining_qty
-        if "SkuId" in out:
-            out["SkuId"] = clean(row[8])
 
         output_rows.append(out)
 
@@ -330,20 +317,21 @@ def main():
             if not proceed:
                 return
 
-        # Rewrite first, while inventory has not yet been changed.
-        # If rewrite fails, inventory is not depleted.
-        backup_path, remaining_rows, omitted_rows = rewrite_loaded_pull_sheet(conn, preview)
-
         depleted_count, total_cards = apply_depletion(conn, preview)
+
+        backup_path, remaining_rows, omitted_rows = rewrite_loaded_pull_sheet(conn, preview)
 
         conn.commit()
 
-        sheet_msg = (
-            f"\n\nLoaded pull sheet updated.\n"
-            f"Remaining rows: {remaining_rows}\n"
-            f"Rows removed: {omitted_rows}\n"
-            f"Backup:\n{backup_path}"
-        )
+        if backup_path:
+            sheet_msg = (
+                f"\n\nLoaded pull sheet updated.\n"
+                f"Remaining rows: {remaining_rows}\n"
+                f"Rows removed: {omitted_rows}\n"
+                f"Backup:\n{backup_path}"
+            )
+        else:
+            sheet_msg = "\n\nNo loaded pull sheet metadata found, so no pull sheet was rewritten."
 
         messagebox.showinfo(
             "Depletion complete",
@@ -355,11 +343,11 @@ def main():
 
         print(f"Rows depleted: {depleted_count}")
         print(f"Cards depleted: {total_cards}")
-        print(f"Pull sheet backup: {backup_path}")
+        if backup_path:
+            print(f"Pull sheet backup: {backup_path}")
 
-    except Exception as e:
+    except Exception:
         conn.rollback()
-        messagebox.showerror("Depletion failed", str(e))
         raise
 
     finally:

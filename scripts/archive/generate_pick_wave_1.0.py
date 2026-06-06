@@ -41,48 +41,6 @@ def fuzzy_name_ok(pull_name: str, inv_name: str) -> bool:
     return set(a.split()).issubset(set(b.split()))
 
 
-def condition_match(pull_condition, inv_condition, pull_print, inv_print):
-    """
-    Strict condition match with support for inventory exports that encode
-    print type inside the condition value.
-
-    Examples:
-      pull: near_mint + foil
-      inventory: near_mint_foil + foil
-      -> match
-
-      pull: near_mint + normal
-      inventory: near_mint_foil + foil
-      -> no match
-    """
-    p_cond = (pull_condition or "").lower().strip()
-    i_cond = (inv_condition or "").lower().strip()
-    p_print = (pull_print or "").lower().strip()
-    i_print = (inv_print or "").lower().strip()
-
-    if p_print != i_print:
-        return False
-
-    if p_cond == i_cond:
-        return True
-
-    print_suffixes = {
-        "foil": "foil",
-        "holofoil": "holofoil",
-        "reverse holofoil": "reverse_holofoil",
-        "reverse_holofoil": "reverse_holofoil",
-        "reverse holo": "reverse_holo",
-        "reverse_holo": "reverse_holo",
-    }
-
-    suffix = print_suffixes.get(p_print, p_print.replace(" ", "_"))
-
-    if i_cond == f"{p_cond}_{suffix}":
-        return True
-
-    return False
-
-
 def fetch_pull_items(conn):
     return conn.execute("""
         SELECT id, order_id, quantity, card_name, collector_no, print, condition, tcg, set_name, rarity
@@ -111,6 +69,7 @@ def fetch_inventory_candidates(conn, item):
             c.quantity > 0
             AND c.collector_no = ?
             AND lower(c.print) = lower(?)
+            AND lower(c.condition) = lower(?)
             AND lower(c.tcg) = lower(?)
         ORDER BY
             c.batch_id,
@@ -118,6 +77,7 @@ def fetch_inventory_candidates(conn, item):
     """, (
         item["collector_no"],
         item["print"],
+        item["condition"],
         item["tcg"],
     )).fetchall()
 
@@ -135,11 +95,7 @@ def allocate(conn):
         remaining = need
 
         candidates = fetch_inventory_candidates(conn, item)
-        matched = [
-            c for c in candidates
-            if fuzzy_name_ok(item["card_name"], c["name"])
-            and condition_match(item["condition"], c["condition"], item["print"], c["print"])
-        ]
+        matched = [c for c in candidates if fuzzy_name_ok(item["card_name"], c["name"])]
 
         for c in matched:
             if remaining <= 0:

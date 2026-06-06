@@ -1,6 +1,3 @@
-# This version of the script attempts to load SkuIds from the pull sheet into the pick wave function.
-# It then preserves them throughout the pipeline to be removed from the pull sheet.
-# What this does is allows the user to upload the remaining unfound cards to TCGA without risk of having cross-inventory issues.
 import csv
 import sqlite3
 from pathlib import Path
@@ -38,12 +35,19 @@ def norm_tcg(v):
         return "pokemon"
     if s in ("yugioh", "yu-gi-oh!", "yu-gi-oh", "ygo"):
         return "yugioh"
-    if s in ("digimon", "digimon card game"):
-        return "digimon"
     return s
 
 
 def parse_condition_print(v):
+    """
+    Pull sheet examples:
+      Near Mint
+      Near Mint Holofoil
+      Lightly Played Reverse Holofoil
+
+    Returns:
+      condition, print
+    """
     s = clean(v).lower()
 
     print_type = "normal"
@@ -67,7 +71,6 @@ def parse_condition_print(v):
 def init_pull_table(conn):
     conn.executescript("""
     DROP TABLE IF EXISTS pull_items;
-    DROP TABLE IF EXISTS loaded_pull_sheet;
 
     CREATE TABLE pull_items (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -79,33 +82,15 @@ def init_pull_table(conn):
         condition TEXT,
         tcg TEXT,
         set_name TEXT,
-        rarity TEXT,
-
-        source_file_path TEXT,
-        original_row_number INTEGER,
-        original_product_line TEXT,
-        original_product_name TEXT,
-        original_condition TEXT,
-        original_number TEXT,
-        original_set TEXT,
-        original_rarity TEXT,
-        original_quantity INTEGER,
-        original_skuid TEXT
+        rarity TEXT
     );
 
     CREATE INDEX idx_pull_lookup
     ON pull_items (collector_no, print, condition, tcg);
-
-    CREATE TABLE loaded_pull_sheet (
-        id INTEGER PRIMARY KEY CHECK (id = 1),
-        source_file_path TEXT,
-        fieldnames TEXT
-    );
     """)
 
 
 def import_pull_csv(csv_path):
-    csv_path = Path(csv_path)
     conn = sqlite3.connect(DB_PATH)
 
     try:
@@ -113,44 +98,19 @@ def import_pull_csv(csv_path):
 
         with open(csv_path, "r", encoding="utf-8-sig", newline="") as f:
             reader = csv.DictReader(f)
-            fieldnames = reader.fieldnames or []
-
-            conn.execute(
-                """
-                INSERT INTO loaded_pull_sheet (
-                    id,
-                    source_file_path,
-                    fieldnames
-                )
-                VALUES (1, ?, ?)
-                """,
-                (
-                    str(csv_path),
-                    "|".join(fieldnames),
-                )
-            )
-
             count = 0
 
-            for row_number, row in enumerate(reader, start=2):
-                original_product_line = clean(row.get("Product Line"))
-                original_product_name = clean(row.get("Product Name"))
-                original_condition = clean(row.get("Condition"))
-                original_number = clean(row.get("Number"))
-                original_set = clean(row.get("Set"))
-                original_rarity = clean(row.get("Rarity"))
-                original_quantity = clean_int(row.get("Quantity"))
-                original_skuid = clean(row.get("SkuId"))
+            for row in reader:
+                tcg = norm_tcg(row.get("Product Line"))
+                card_name = clean(row.get("Product Name"))
+                condition, print_type = parse_condition_print(row.get("Condition"))
+                collector_no = clean(row.get("Number"))
+                set_name = clean(row.get("Set"))
+                rarity = clean(row.get("Rarity")).lower()
+                qty = clean_int(row.get("Quantity"))
 
-                tcg = norm_tcg(original_product_line)
-                card_name = original_product_name
-                condition, print_type = parse_condition_print(original_condition)
-                collector_no = original_number
-                set_name = original_set
-                rarity = original_rarity.lower()
-                qty = original_quantity
-
-                order_id = clean(row.get("order_id")) or csv_path.stem
+                # If pull sheet has no order_id, use source filename as order bucket for now.
+                order_id = clean(row.get("order_id")) or Path(csv_path).stem
 
                 if qty <= 0:
                     continue
@@ -168,20 +128,9 @@ def import_pull_csv(csv_path):
                         condition,
                         tcg,
                         set_name,
-                        rarity,
-
-                        source_file_path,
-                        original_row_number,
-                        original_product_line,
-                        original_product_name,
-                        original_condition,
-                        original_number,
-                        original_set,
-                        original_rarity,
-                        original_quantity,
-                        original_skuid
+                        rarity
                     )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         order_id,
@@ -193,17 +142,6 @@ def import_pull_csv(csv_path):
                         tcg,
                         set_name,
                         rarity,
-
-                        str(csv_path),
-                        row_number,
-                        original_product_line,
-                        original_product_name,
-                        original_condition,
-                        original_number,
-                        original_set,
-                        original_rarity,
-                        original_quantity,
-                        original_skuid,
                     )
                 )
 
