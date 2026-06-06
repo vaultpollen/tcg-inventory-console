@@ -17,8 +17,7 @@ SCRIPTS = {
     "Manual Card Lookup": "manual_card_lookup.py",
     "Batch Lookup": "batch_lookup.py",
     "Add / Update Batch": "batch_editor.py",
-    "Single Card Entry": "single_card_entry.py",
-    "Push STAGE to Batch": "push_stage_to_batch.py"
+    "Single Card Entry": "single_card_entry.py"
 }
 
 def open_file(path):
@@ -105,7 +104,7 @@ def make_button(parent, text, command, accent=False):
 def main():
     root = tk.Tk()
     root.title("TCG Inventory Console")
-    root.geometry("500x810")
+    root.geometry("500x740")
     root.resizable(False, False)
     root.configure(bg="#121212")
 
@@ -188,12 +187,6 @@ def main():
         admin,
         "Single Card Entry",
         lambda: run_script("single_card_entry.py", status)
-    )
-
-    make_button(
-        admin,
-        "Push STAGE to Batch",
-        lambda: run_script("push_stage_to_batch.py", status)
     )
 
     root.mainloop()

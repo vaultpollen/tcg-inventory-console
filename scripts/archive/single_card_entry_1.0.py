@@ -65,11 +65,6 @@ def refresh_last_batches():
     last_si_var.set(get_last_si_batch() or "None")
 
 
-def toggle_stage_batch():
-    if use_stage_var.get():
-        batch_var.set("STAGE")
-
-
 def batch_exists(conn, batch_id):
     row = conn.execute(
         """
@@ -198,30 +193,10 @@ def save_card():
 
     try:
         if not batch_exists(conn, data["batch_id"]):
-            if data["batch_id"].upper() == "STAGE":
-                conn.execute(
-                    """
-                    INSERT INTO batches (
-                        batch_id,
-                        source_system,
-                        box_id,
-                        segment,
-                        tcg,
-                        active,
-                        notes
-                    )
-                    VALUES ('STAGE', 'STAGE', 'STAGE', 'STAGE', ?, 1, ?)
-                    """,
-                    (
-                        data["tcg"],
-                        "Temporary holding batch for mobile/on-the-go listing.",
-                    )
-                )
-            else:
-                made_batch = create_batch_prompt(conn, data["batch_id"])
-                if not made_batch:
-                    conn.rollback()
-                    return
+            made_batch = create_batch_prompt(conn, data["batch_id"])
+            if not made_batch:
+                conn.rollback()
+                return
 
         conn.execute(
             """
@@ -291,9 +266,6 @@ def clear_card_fields():
         tcg_var.set("mtg")
         batch_var.set("")
 
-    if use_stage_var.get():
-        batch_var.set("STAGE")
-
 
 root = tk.Tk()
 root.title("Single Card Entry")
@@ -302,7 +274,6 @@ root.geometry("620x560")
 last_t_var = tk.StringVar()
 last_si_var = tk.StringVar()
 keep_context_var = tk.IntVar(value=1)
-use_stage_var = tk.IntVar(value=0)
 
 name_var = tk.StringVar()
 set_code_var = tk.StringVar()
@@ -378,13 +349,6 @@ tk.Checkbutton(
     text="Keep set/batch fields after adding",
     variable=keep_context_var
 ).grid(row=start_row + len(fields) + 1, column=1, sticky="w", pady=(0, 8))
-
-tk.Checkbutton(
-    frame,
-    text="Use STAGE batch",
-    variable=use_stage_var,
-    command=toggle_stage_batch
-).grid(row=start_row + len(fields) + 2, column=1, sticky="w", pady=(0, 8))
 
 refresh_last_batches()
 root.mainloop()

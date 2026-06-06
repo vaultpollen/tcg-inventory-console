@@ -51,19 +51,6 @@ def norm_language(v):
     return LANG_MAP.get(s, s)
 
 
-def norm_tcg(v):
-    s = clean(v).lower()
-    if s in ("magic", "magic the gathering", "mtg"):
-        return "mtg"
-    if s in ("pokemon", "pokémon"):
-        return "pokemon"
-    if s in ("yugioh", "yu-gi-oh", "yu-gi-oh!", "ygo"):
-        return "yugioh"
-    if s in ("digimon", "digimon card game"):
-        return "digimon"
-    return s
-
-
 def find_first(row, candidates):
     for c in candidates:
         if c in row:
@@ -115,7 +102,6 @@ def archive_imported_csv(csv_path):
 def parse_filename_metadata(csv_path):
     """
     Expected filename format:
-      STAGE.csv
       SI101 MTG Normal en 57 1.csv
       SI102 Pokemon Reverse Holofoil en 57 2.csv
 
@@ -129,17 +115,6 @@ def parse_filename_metadata(csv_path):
     """
     csv_path = Path(csv_path)
     stem = csv_path.stem.strip()
-
-    if stem.upper() == "STAGE" or stem.upper().startswith("STAGE "):
-        return {
-            "batch_id": "STAGE",
-            "tcg": "",
-            "print": "normal",
-            "language": "en",
-            "box_id": "STAGE",
-            "segment": "STAGE",
-        }
-
     parts = stem.split()
 
     if len(parts) < 6:
@@ -189,7 +164,7 @@ def normalize_card_row(row, meta):
         "condition": norm_condition(find_first(row, ["Condition", "condition"])),
         "language": norm_language(meta["language"]),
         "batch_id": clean(meta["batch_id"]),
-        "tcg": norm_tcg(meta["tcg"] or find_first(row, ["Product Line", "TCG", "Game"])),
+        "tcg": clean(meta["tcg"]).lower(),
     }
 
 
@@ -377,7 +352,7 @@ def select_csvs():
         try:
             meta = parse_filename_metadata(selected_csv_paths[0])
             batch_var.set(meta["batch_id"])
-            source_var.set("STAGE" if meta["batch_id"].upper() == "STAGE" else "TCGPLAYER_CSV")
+            source_var.set("TCGPLAYER_CSV")
             box_var.set(meta["box_id"])
             segment_var.set(meta["segment"])
             tcg_var.set(meta["tcg"])
@@ -449,12 +424,10 @@ def import_selected_csvs():
             meta = p["meta"]
             rows = p["rows"]
 
-            source_system = "STAGE" if meta["batch_id"].upper() == "STAGE" else "TCGPLAYER_CSV"
-
             upsert_batch(
                 conn,
                 meta["batch_id"],
-                source_system,
+                "TCGPLAYER_CSV",
                 meta["box_id"],
                 meta["segment"],
                 meta["tcg"],
@@ -585,7 +558,7 @@ tk.Label(frame, text="CSV Inventory Import").grid(row=9, column=0, columnspan=3,
 
 tk.Label(
     frame,
-    text="Expected filename: SI101 MTG Normal en 57 1.csv or STAGE.csv",
+    text="Expected filename: SI101 MTG Normal en 57 1.csv",
     fg="#555555"
 ).grid(row=10, column=1, sticky="w")
 
