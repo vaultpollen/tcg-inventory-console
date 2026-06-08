@@ -63,7 +63,9 @@ def get_last_si_batch():
 def refresh_last_batches():
     last_t_var.set(get_last_batch_by_code("T") or "None")
     last_si_var.set(get_last_si_batch() or "None")
+    root.bind("<Return>", lambda event: save_card())
 
+    root.mainloop()
 
 def toggle_stage_batch():
     if use_stage_var.get():
@@ -280,24 +282,25 @@ def clear_card_fields():
     name_var.set("")
     collector_var.set("")
     qty_var.set("1")
+    rarity_var.set("")
 
     if not keep_context_var.get():
         set_code_var.set("")
         set_name_var.set("")
         condition_var.set("near_mint")
         print_var.set("normal")
-        rarity_var.set("")
         language_var.set("en")
         tcg_var.set("mtg")
         batch_var.set("")
 
     if use_stage_var.get():
         batch_var.set("STAGE")
-
+    
+    name_entry.focus_set()
 
 root = tk.Tk()
 root.title("Single Card Entry")
-root.geometry("620x560")
+root.geometry("620x580")
 
 last_t_var = tk.StringVar()
 last_si_var = tk.StringVar()
@@ -359,18 +362,31 @@ for idx, (label, var, required) in enumerate(fields):
         fg="black" if required else optional_fg
     ).grid(row=r, column=0, sticky="w", pady=4)
 
-    tk.Entry(
+    entry_widget = tk.Entry(
         frame,
         textvariable=var,
         width=45,
         bg=required_bg if required else "white",
         fg="black" if required else optional_fg
-    ).grid(row=r, column=1, sticky="w", pady=4)
+    )
+    entry_widget.grid(row=r, column=1, sticky="w", pady=4)
+
+    if var is name_var:
+        name_entry = entry_widget
+        name_entry.focus_set()
 
 button_frame = tk.Frame(frame)
 button_frame.grid(row=start_row + len(fields), column=1, sticky="w", pady=16)
 
-tk.Button(button_frame, text="Add Card", command=save_card, width=18).pack(side="left", padx=4)
+add_button = tk.Button(
+    button_frame,
+    text="Add Card",
+    command=save_card,
+    width=18
+)
+
+add_button.pack(side="left", padx=4)
+root.bind("<Return>", lambda event: save_card())
 tk.Button(button_frame, text="Clear", command=clear_card_fields, width=10).pack(side="left", padx=4)
 
 tk.Checkbutton(
